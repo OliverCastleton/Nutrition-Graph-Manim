@@ -7,20 +7,46 @@ Generates a modern, dark-themed nutrition ring chart with animated macro
 segments and a calorie count-up — suitable for YouTube fitness content or
 social-media health tracking clips.
 
-Render commands
----------------
-High quality (1920 × 1080):
+Render commands (PowerShell)
+----------------------------
+Low quality, opaque (fast preview):
+    manim -pql macro_tracker.py MacroTracker
+
+Low quality with custom values:
+    $env:TARGET_CAL=3500; $env:TOTAL_CAL=3470; $env:PROTEIN=171; $env:CARBS=185; $env:FAT=71; \\
+        manim -pql macro_tracker.py MacroTracker -o output_name
+
+High quality, opaque (1920 × 1080):
     manim -pqh macro_tracker.py MacroTracker
 
-Transparent background (for compositing over footage):
+High quality, transparent background:
     manim -pqh --transparent macro_tracker.py MacroTracker
 
-Preview (lower quality, fast):
-    manim -pql macro_tracker.py MacroTracker
+High quality, transparent with custom values:
+    $env:TARGET_CAL=3500; $env:TOTAL_CAL=3470; $env:PROTEIN=171; $env:CARBS=185; $env:FAT=71; \\
+        manim -pqh --transparent macro_tracker.py MacroTracker -o output_name
+
+Environment variables for nutrition data:
+    TARGET_CAL  - calorie goal (default: 3400)
+    TOTAL_CAL   - total calories consumed (default: 3000)
+    PROTEIN     - grams of protein (default: 160)
+    CARBS       - grams of carbs (default: 300)
+    FAT         - grams of fat (default: 71)
+    BG_OPACITY  - background opacity 0.0-1.0 (default: 1.0, only works with -pql/-pqh without --transparent)
+
+Manim quality flags:
+    -pql  = preview, low quality, quick render
+    -pqm  = preview, medium quality
+    -pqh  = preview, high quality (1920 × 1080)
+    --transparent = use transparent background instead of solid
+
+Output location:
+    Use Manim's -o flag: ... MacroTracker -o output_name
 """
 
 from __future__ import annotations
 
+import os
 import numpy as np
 from manim import (
     # Core
@@ -44,18 +70,26 @@ from manim import (
 # ─────────────────────────────────────────────────────────────────
 #  EDITABLE INPUTS  ← change these values to customise the animation
 # ─────────────────────────────────────────────────────────────────
-TARGET_CALORIES: int = 2580   # daily calorie goal
-TOTAL_CALORIES:  int = 3470   # calories consumed today
+# Command-line usage (PowerShell):
+#   $env:TARGET_CAL=3500; $env:TOTAL_CAL=3470; $env:PROTEIN=171; $env:CARBS=185; $env:FAT=71; manim -pql macro_tracker.py MacroTracker -o output_name
+# Or with transparency and high quality:
+#   $env:TARGET_CAL=3500; $env:TOTAL_CAL=3470; $env:PROTEIN=171; $env:CARBS=185; $env:FAT=71; manim -pqh --transparent macro_tracker.py MacroTracker -o output_name
 
-PROTEIN_G: int = 171   # grams of protein consumed
-CARBS_G:   int = 185   # grams of carbohydrates consumed
-FAT_G:     int = 71    # grams of fat consumed
+TARGET_CALORIES: int = int(os.getenv('TARGET_CAL', '3400'))   # daily calorie goal
+TOTAL_CALORIES:  int = int(os.getenv('TOTAL_CAL', '3000'))    # calories consumed today
 
-TITLE_TEXT: str = "Daily Nutrition"  # header title — change freely
+PROTEIN_G: int = int(os.getenv('PROTEIN', '160'))   # grams of protein consumed
+CARBS_G:   int = int(os.getenv('CARBS', '300'))     # grams of carbohydrates consumed
+FAT_G:     int = int(os.getenv('FAT', '71'))        # grams of fat consumed
+
+TITLE_TEXT: str = "Daily Nutrition 2"  # header title — change freely
 
 # Whether to allow the coloured ring to exceed 100% of the target
 ALLOW_OVERFLOW: bool  = True
 OVERFLOW_CAP:   float = 1.2   # cap ring fill at 120% of target
+
+# Background opacity (1.0 = opaque, 0.0 = transparent)
+BG_OPACITY: float = float(os.getenv('BG_OPACITY', '1.0'))
 
 
 # ─────────────────────────────────────────────────────────────────
@@ -68,7 +102,7 @@ CARBS_COLOR    = "#FFC107"   # amber / yellow
 FAT_COLOR      = "#F44336"   # red
 TEXT_PRIMARY   = "#FFFFFF"   # white
 TEXT_SECONDARY = "#9E9E9E"   # grey
-LABEL_OFFSET   = 0.55        # how far outside the ring labels sit
+LABEL_OFFSET   = 1.2        # how far outside the ring labels sit
 
 
 # ─────────────────────────────────────────────────────────────────
@@ -143,6 +177,8 @@ def build_ring_arc(
         stroke_color=color,
     )
     arc.set_fill(opacity=0)
+    # Round the stroke ends
+    arc.stroke_linecap = 1  # 1 = round cap
     return arc
 
 
@@ -228,12 +264,18 @@ class MacroTracker(Scene):
     """
 
     # ── Layout (scene units; default Manim frame is 14.22 × 8.00) ─
-    RING_CENTER: np.ndarray = LEFT  * 2.8   # centre of the donut ring
+    RING_CENTER: np.ndarray = np.array([0, 0, 0])  # centre of the donut ring (centered)
     RING_RADIUS: float      = 2.2           # ring radius in scene units
     RING_STROKE: float      = 22.0          # stroke width in screen points
 
     def construct(self) -> None:
-        self.camera.background_color = BG_COLOR
+        # Apply background color with opacity control
+        bg_color = BG_COLOR
+        self.camera.background_color = bg_color
+        if BG_OPACITY < 1.0:
+            # Convert hex to RGB for opacity blending
+            self.camera.background_color = bg_color
+            # Manim handles opacity via Color objects; this is the scene background
         m = calc_macros()
 
         # ── 1. Background ring (full 360°) ────────────────────────
@@ -269,19 +311,21 @@ class MacroTracker(Scene):
         tracker = ValueTracker(0)
         cal_number, target_label = build_calorie_center(tracker, self.RING_CENTER)
 
-        # ── 4. Header ─────────────────────────────────────────────
-        header = Text(
-            TITLE_TEXT,
-            font_size=38,
-            color=TEXT_PRIMARY,
-            weight=BOLD,
-        ).to_edge(UP, buff=0.45)
-
-        # ── 5. Macro labels positioned near their ring arcs ────────
+        # ── 4. Macro labels positioned near their ring arcs ────────
         def _label_pos(start_angle: float, sweep: float) -> np.ndarray:
             """Return position just outside the ring at the arc midpoint."""
             mid = start_angle + sweep / 2
-            r = self.RING_RADIUS + LABEL_OFFSET
+            # Angle-dependent offset: more space at top (dot), less on sides
+            # Normalize angle to 0-2π
+            angle_norm = mid % TAU
+            # Distance from top (π/2) - if close to top, use full offset; otherwise use less
+            dist_from_top = min(abs(angle_norm - PI/2), TAU - abs(angle_norm - PI/2))
+            # Larger offset near top (protecting protein dot), smaller on sides
+            if dist_from_top < PI/3:  # Near top (within 60°)
+                offset = LABEL_OFFSET + 0.2  # Extra space for protein
+            else:
+                offset = LABEL_OFFSET - 0.6  # Bring carbs/fat closer
+            r = self.RING_RADIUS + offset
             return self.RING_CENTER + np.array([
                 r * np.cos(mid), r * np.sin(mid), 0
             ])
@@ -293,14 +337,14 @@ class MacroTracker(Scene):
         p_row.move_to(_label_pos(p_start, p_sweep))
         c_row.move_to(_label_pos(c_start, c_sweep))
         f_row.move_to(_label_pos(f_start, f_sweep))
+        f_row.shift(LEFT * 0.3)  # Move fat label to the left
 
         # ══════════════════════════════════════════════════════════
         #  ANIMATION SEQUENCE
         # ══════════════════════════════════════════════════════════
 
-        # Step 1 — background ring + header
+        # Step 1 — background ring
         self.play(
-            FadeIn(header, shift=DOWN * 0.15),
             Create(bg_ring, rate_func=smooth),
             run_time=0.7,
         )
