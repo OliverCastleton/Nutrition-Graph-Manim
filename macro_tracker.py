@@ -26,7 +26,7 @@ from manim import (
     # Core
     Scene,
     # Mobjects
-    Arc, Dot, Line, Mobject, VGroup, Text,
+    Arc, Dot, Mobject, VGroup, Text,
     # Animation helpers
     always_redraw, LaggedStart,
     Create, FadeIn,
@@ -51,6 +51,8 @@ PROTEIN_G: int = 171   # grams of protein consumed
 CARBS_G:   int = 185   # grams of carbohydrates consumed
 FAT_G:     int = 71    # grams of fat consumed
 
+TITLE_TEXT: str = "Daily Nutrition"  # header title — change freely
+
 # Whether to allow the coloured ring to exceed 100% of the target
 ALLOW_OVERFLOW: bool  = True
 OVERFLOW_CAP:   float = 1.2   # cap ring fill at 120% of target
@@ -66,7 +68,7 @@ CARBS_COLOR    = "#FFC107"   # amber / yellow
 FAT_COLOR      = "#F44336"   # red
 TEXT_PRIMARY   = "#FFFFFF"   # white
 TEXT_SECONDARY = "#9E9E9E"   # grey
-DIVIDER_COLOR  = "#2A2D35"   # subtle vertical rule
+LABEL_OFFSET   = 0.55        # how far outside the ring labels sit
 
 
 # ─────────────────────────────────────────────────────────────────
@@ -229,7 +231,6 @@ class MacroTracker(Scene):
     RING_CENTER: np.ndarray = LEFT  * 2.8   # centre of the donut ring
     RING_RADIUS: float      = 2.2           # ring radius in scene units
     RING_STROKE: float      = 22.0          # stroke width in screen points
-    LABEL_X:    float       = 1.8           # left edge of the label panel
 
     def construct(self) -> None:
         self.camera.background_color = BG_COLOR
@@ -270,27 +271,28 @@ class MacroTracker(Scene):
 
         # ── 4. Header ─────────────────────────────────────────────
         header = Text(
-            "Daily Nutrition",
-            font_size=34,
-            color=TEXT_SECONDARY,
+            TITLE_TEXT,
+            font_size=38,
+            color=TEXT_PRIMARY,
+            weight=BOLD,
         ).to_edge(UP, buff=0.45)
 
-        # ── 5. Macro label panel ──────────────────────────────────
+        # ── 5. Macro labels positioned near their ring arcs ────────
+        def _label_pos(start_angle: float, sweep: float) -> np.ndarray:
+            """Return position just outside the ring at the arc midpoint."""
+            mid = start_angle + sweep / 2
+            r = self.RING_RADIUS + LABEL_OFFSET
+            return self.RING_CENTER + np.array([
+                r * np.cos(mid), r * np.sin(mid), 0
+            ])
+
         p_row = build_macro_row(PROTEIN_COLOR, "Protein", PROTEIN_G, m["p_pct"])
         c_row = build_macro_row(CARBS_COLOR,   "Carbs",   CARBS_G,   m["c_pct"])
         f_row = build_macro_row(FAT_COLOR,     "Fat",     FAT_G,     m["f_pct"])
 
-        panel = VGroup(p_row, c_row, f_row).arrange(DOWN, buff=0.65, aligned_edge=LEFT)
-        # Position panel so its left edge starts at LABEL_X
-        panel.align_to(RIGHT * self.LABEL_X, LEFT)
-
-        # Vertical divider between ring area and label panel
-        divider = Line(
-            start=UP  * 3.2,
-            end=DOWN  * 3.2,
-            stroke_width=1.2,
-            stroke_color=DIVIDER_COLOR,
-        ).move_to(RIGHT * 0.35)
+        p_row.move_to(_label_pos(p_start, p_sweep))
+        c_row.move_to(_label_pos(c_start, c_sweep))
+        f_row.move_to(_label_pos(f_start, f_sweep))
 
         # ══════════════════════════════════════════════════════════
         #  ANIMATION SEQUENCE
@@ -333,14 +335,12 @@ class MacroTracker(Scene):
             run_time=1.5,
         )
 
-        # Step 6 — macro label panel slides in with a stagger
-        label_slide = RIGHT * 0.35   # common slide direction for each row
-        self.play(FadeIn(divider), run_time=0.25)
+        # Step 6 — macro labels fade in near their ring arcs
         self.play(
             LaggedStart(
-                FadeIn(p_row, shift=label_slide),
-                FadeIn(c_row, shift=label_slide),
-                FadeIn(f_row, shift=label_slide),
+                FadeIn(p_row, shift=RIGHT * 0.25),
+                FadeIn(c_row, shift=RIGHT * 0.25),
+                FadeIn(f_row, shift=RIGHT * 0.25),
                 lag_ratio=0.35,
             ),
             run_time=1.2,
