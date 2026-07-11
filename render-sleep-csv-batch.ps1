@@ -114,15 +114,19 @@ foreach ($row in $rows) {
         if ([string]::IsNullOrWhiteSpace([string]$dateRaw)) {
             continue
         }
-        if ([string]::IsNullOrWhiteSpace([string]$durationRaw) -or [string]$durationRaw -eq "--") {
-            continue
-        }
 
         $date = Convert-ToDate -Value ([string]$dateRaw)
         $dateKey = $date.ToString("yyyy-MM-dd")
-        $totalSleep = Convert-DurationToMinutes -Value ([string]$durationRaw)
+        $missingDuration = [string]::IsNullOrWhiteSpace([string]$durationRaw) -or [string]$durationRaw -eq "--"
 
-        if ($null -eq $totalSleep -or $totalSleep -le 0) {
+        $totalSleep = if ($missingDuration) {
+            0
+        }
+        else {
+            Convert-DurationToMinutes -Value ([string]$durationRaw)
+        }
+
+        if ($null -eq $totalSleep -or $totalSleep -lt 0) {
             throw "Duration is empty or invalid."
         }
 
@@ -135,6 +139,10 @@ foreach ($row in $rows) {
 
         $awake = 0
         $outputName = "{0}_{1}" -f $OutputPrefix, $dateKey
+
+        if ($missingDuration) {
+            Write-Warning "Sleep: $dateKey has no duration in CSV; rendering placeholder with 0m"
+        }
 
         Write-Host "Sleep: $dateKey -> $outputName (total ${totalSleep}m)"
 

@@ -22,11 +22,11 @@ import os
 import numpy as np
 from manim import (
     Scene,
-    Arc, Dot, Mobject, VGroup, Text,
-    always_redraw, LaggedStart,
+    Arc, Mobject, Text,
+    always_redraw,
     Create, FadeIn,
     ValueTracker,
-    LEFT, RIGHT, UP, DOWN, TAU, PI,
+    UP, DOWN, TAU, PI,
     BOLD,
     smooth,
 )
@@ -40,8 +40,6 @@ REM_MIN: int = int(os.getenv("REM_MIN", "95"))
 AWAKE_MIN: int = int(os.getenv("AWAKE_MIN", "25"))
 
 TITLE_TEXT: str = os.getenv("SLEEP_TITLE", "Sleep Recovery")
-DATE_TEXT: str = os.getenv("SLEEP_DATE", "")
-
 ALLOW_OVERFLOW: bool = True
 OVERFLOW_CAP: float = 1.2
 
@@ -52,9 +50,6 @@ LIGHT_COLOR = "#4EC3FF"
 REM_COLOR = "#9B7BFF"
 TEXT_PRIMARY = "#FFFFFF"
 TEXT_SECONDARY = "#A8B2C0"
-
-LABEL_OFFSET = 0.95
-
 
 def calc_sleep() -> dict[str, int | float]:
     stage_total = max(DEEP_MIN + LIGHT_MIN + REM_MIN, 1)
@@ -89,14 +84,6 @@ def build_ring_arc(
     arc.set_fill(opacity=0)
     arc.stroke_linecap = 1
     return arc
-
-
-def build_stage_row(color: str, label: str, minutes: int, pct: float) -> VGroup:
-    dot = Dot(color=color, radius=0.11)
-    title = Text(label, font_size=22, color=TEXT_PRIMARY, weight=BOLD)
-    value = Text(f"{minutes}m   ({pct:.0%})", font_size=19, color=TEXT_SECONDARY)
-    text_col = VGroup(title, value).arrange(DOWN, buff=0.08, aligned_edge=LEFT)
-    return VGroup(dot, text_col).arrange(RIGHT, buff=0.22)
 
 
 def format_minutes_as_hm(minutes: int) -> str:
@@ -137,11 +124,6 @@ class SleepTracker(Scene):
         title.to_edge(UP).shift(DOWN * 0.35)
         self.play(FadeIn(title, shift=DOWN * 0.12), run_time=0.45)
 
-        if DATE_TEXT.strip():
-            subtitle = Text(DATE_TEXT, font_size=22, color=TEXT_SECONDARY)
-            subtitle.next_to(title, DOWN, buff=0.15)
-            self.play(FadeIn(subtitle, shift=DOWN * 0.08), run_time=0.3)
-
         bg_ring = Arc(
             radius=self.RING_RADIUS,
             start_angle=0,
@@ -169,19 +151,6 @@ class SleepTracker(Scene):
         tracker = ValueTracker(0)
         sleep_number, goal_text = build_center_text(tracker, self.RING_CENTER)
 
-        def _label_pos(start_angle: float, sweep: float) -> np.ndarray:
-            mid = start_angle + (sweep / 2)
-            r = self.RING_RADIUS + LABEL_OFFSET
-            return self.RING_CENTER + np.array([r * np.cos(mid), r * np.sin(mid), 0])
-
-        deep_row = build_stage_row(DEEP_COLOR, "Deep", DEEP_MIN, s["deep_pct"])
-        light_row = build_stage_row(LIGHT_COLOR, "Light", LIGHT_MIN, s["light_pct"])
-        rem_row = build_stage_row(REM_COLOR, "REM", REM_MIN, s["rem_pct"])
-
-        deep_row.move_to(_label_pos(deep_start, deep_sweep))
-        light_row.move_to(_label_pos(light_start, light_sweep))
-        rem_row.move_to(_label_pos(rem_start, rem_sweep))
-
         efficiency = Text(
             f"Awake {AWAKE_MIN}m   Sleep efficiency {s['sleep_eff']:.0f}%",
             font_size=20,
@@ -196,16 +165,6 @@ class SleepTracker(Scene):
         self.add(sleep_number)
         self.play(FadeIn(goal_text, shift=UP * 0.08), run_time=0.3)
         self.play(tracker.animate.set_value(TOTAL_SLEEP_MIN), rate_func=smooth, run_time=1.5)
-
-        self.play(
-            LaggedStart(
-                FadeIn(deep_row, shift=RIGHT * 0.2),
-                FadeIn(light_row, shift=RIGHT * 0.2),
-                FadeIn(rem_row, shift=RIGHT * 0.2),
-                lag_ratio=0.3,
-            ),
-            run_time=1.2,
-        )
 
         self.play(FadeIn(efficiency, shift=UP * 0.08), run_time=0.35)
         self.wait(1.4)
