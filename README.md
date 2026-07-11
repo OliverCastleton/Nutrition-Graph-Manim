@@ -118,4 +118,46 @@ For a more compatible transparent format, use WebM manually:
 $env:TARGET_CAL=3500; $env:TOTAL_CAL=3470; $env:PROTEIN=171; $env:CARBS=185; $env:FAT=71; manim -pqh --transparent --format webm macro_tracker.py MacroTracker -o my_video
 ```
 
+---
+
+## Batch Render From Inputs Folder (fastest workflow)
+
+This project includes batch scripts that read your export files directly from `Inputs/`:
+
+- `Inputs/FoodLog.CSV` for nutrition renders
+- `Inputs/Sleep.csv` for sleep renders
+
+Run both with one command:
+
+```powershell
+& "C:\Users\Utente\Documents\GitHub\timelapse-scripts\Nutrition-Graph-Manim\render-inputs-batch.ps1"
+```
+
+This creates:
+
+- `nutrition_YYYY-MM-DD` videos from `FoodLog.CSV`
+- `sleep_YYYY-MM-DD` videos from `Sleep.csv`
+
+Both are rendered as transparent high quality videos.
+
+### Optional dry run (parsing only, no rendering)
+
+```powershell
+& "C:\Users\Utente\Documents\GitHub\timelapse-scripts\Nutrition-Graph-Manim\render-inputs-batch.ps1" -DryRun
+```
+
+### Run only one category
+
+Nutrition only:
+
+```powershell
+& "C:\Users\Utente\Documents\GitHub\timelapse-scripts\Nutrition-Graph-Manim\render-foodlog-batch.ps1"
+```
+
+Sleep only:
+
+```powershell
+& "C:\Users\Utente\Documents\GitHub\timelapse-scripts\Nutrition-Graph-Manim\render-sleep-csv-batch.ps1"
+```
+
 
