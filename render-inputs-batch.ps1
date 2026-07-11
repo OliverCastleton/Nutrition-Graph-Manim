@@ -2,6 +2,8 @@ param(
     [string]$InputsDir = (Join-Path $PSScriptRoot "Inputs"),
     [int]$NutritionTargetCal = 3400,
     [int]$SleepTargetMin = 480,
+    [ValidateSet("l", "m", "h")][string]$Quality = "h",
+    [switch]$Transparent,
     [switch]$DryRun
 )
 
@@ -23,18 +25,18 @@ if (-not (Test-Path -LiteralPath $sleepScript)) {
 
 Write-Host "Starting nutrition batch from $foodCsv"
 if ($DryRun) {
-    & $foodScript -CsvPath $foodCsv -DefaultTargetCal $NutritionTargetCal -OutputPrefix "nutrition" -DryRun
+    & $foodScript -CsvPath $foodCsv -DefaultTargetCal $NutritionTargetCal -OutputPrefix "nutrition" -Quality $Quality -Transparent:$Transparent -DryRun
 }
 else {
-    & $foodScript -CsvPath $foodCsv -DefaultTargetCal $NutritionTargetCal -OutputPrefix "nutrition"
+    & $foodScript -CsvPath $foodCsv -DefaultTargetCal $NutritionTargetCal -OutputPrefix "nutrition" -Quality $Quality -Transparent:$Transparent
 }
 
 Write-Host "Starting sleep batch from $sleepCsv"
 if ($DryRun) {
-    & $sleepScript -CsvPath $sleepCsv -TargetSleepMin $SleepTargetMin -OutputPrefix "sleep" -DryRun
+    & $sleepScript -CsvPath $sleepCsv -TargetSleepMin $SleepTargetMin -OutputPrefix "sleep" -Quality $Quality -Transparent:$Transparent -DryRun
 }
 else {
-    & $sleepScript -CsvPath $sleepCsv -TargetSleepMin $SleepTargetMin -OutputPrefix "sleep"
+    & $sleepScript -CsvPath $sleepCsv -TargetSleepMin $SleepTargetMin -OutputPrefix "sleep" -Quality $Quality -Transparent:$Transparent
 }
 
-Write-Host "All batch renders completed."
+Write-Host "All batch renders completed. Outputs are under outputs/manim/."

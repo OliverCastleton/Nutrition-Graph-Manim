@@ -3,6 +3,8 @@ param(
     [int]$DefaultTargetCal = 3400,
     [string]$OutputPrefix = "nutrition",
     [string]$RenderScriptPath = (Join-Path $PSScriptRoot "render.ps1"),
+    [ValidateSet("l", "m", "h")][string]$Quality = "h",
+    [switch]$Transparent,
     [switch]$DryRun
 )
 
@@ -135,8 +137,8 @@ foreach ($row in $rows) {
                 -Carbs $carbs `
                 -Fat $fat `
                 -Output $outputName `
-                -Quality "h" `
-                -Transparent
+                -Quality $Quality `
+                -Transparent:$Transparent
 
             if ($LASTEXITCODE -ne 0) {
                 throw "Render failed with exit code $LASTEXITCODE"

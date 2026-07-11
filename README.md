@@ -1,163 +1,96 @@
-# Nutrition-Graph-Manim
+# Nutrition Graph Manim
 
-Animated macro-nutrition dashboard built with Manim Community Edition. Generates a dark-themed ring chart with animated macro segments and a calorie count-up.
+Create nutrition and sleep animations with Manim using clean PowerShell wrappers.
 
----
+This repository is now set up for GitHub publishing:
+- No hardcoded machine paths
+- No forced video auto-open on render
+- Local secrets kept out of git
+- Consistent project-relative output folders
 
-## Prerequisites
+## Project Structure
 
-```powershell
-pip install manim
-```
+- `render.ps1`: render one nutrition animation
+- `render-garmin-sleep.ps1`: render one sleep animation
+- `render-inputs-batch.ps1`: render nutrition + sleep from `Inputs/`
+- `render-foodlog-batch.ps1`: nutrition CSV batch
+- `render-sleep-csv-batch.ps1`: sleep CSV batch
+- `render-fatsecret-range.ps1`: date range render from CSV
+- `setup.ps1`: create local Python environment and install dependencies
+- `.env.example`: template for local credentials
+- `scripts/common.ps1`: shared helper functions used by all wrappers
 
----
+Local-only folders (ignored by git):
+- `outputs/`
+- `logs/`
+- `secrets/`
+- `.venv/`
 
-## Quick Start — render.ps1 (recommended)
+## Quick Setup
 
-Use `render.ps1` to render from **any directory** without navigating to the project folder.
-
-### Parameters
-
-| Parameter      | Description                             | Default        |
-| -------------- | --------------------------------------- | -------------- |
-| `-TargetCal`   | Daily calorie goal                      | `3400`         |
-| `-TotalCal`    | Total calories consumed                 | `3000`         |
-| `-Protein`     | Grams of protein                        | `160`          |
-| `-Carbs`       | Grams of carbohydrates                  | `300`          |
-| `-Fat`         | Grams of fat                            | `71`           |
-| `-Output`      | Output file name                        | `macro_output` |
-| `-Quality`     | `l` / `m` / `h` (low / medium / high)   | `h`            |
-| `-Transparent` | Switch — enables transparent background | off            |
-
-### Examples
-
-**Default values, high quality:**
+Run from repository root:
 
 ```powershell
-& "C:\Users\Utente\Documents\GitHub\timelapse-scripts\Nutrition-Graph-Manim\render.ps1"
+.\setup.ps1
 ```
 
-**Custom values, high quality:**
+Then activate environment:
 
 ```powershell
-& "C:\Users\Utente\Documents\GitHub\timelapse-scripts\Nutrition-Graph-Manim\render.ps1" -TargetCal 3500 -TotalCal 3470 -Protein 171 -Carbs 185 -Fat 71 -Output my_video
+.\.venv\Scripts\Activate.ps1
 ```
 
-**Custom values, low quality (fast preview):**
+If script execution is blocked:
 
 ```powershell
-& "C:\Users\Utente\Documents\GitHub\timelapse-scripts\Nutrition-Graph-Manim\render.ps1" -TargetCal 3500 -TotalCal 3470 -Protein 171 -Carbs 185 -Fat 71 -Quality l
+Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
 ```
 
-**High quality + transparent background:**
+## Configuration
+
+You can ignore `.env.example` for now. No API credentials are required.
+
+## Rendering Behavior
+
+All wrappers use `manim -q...` (not `-pq...`), so generated videos do not auto-open.
+
+All renders go under:
+
+```text
+outputs/manim/
+```
+
+## Common Commands
+
+Single nutrition render:
 
 ```powershell
-& "C:\Users\Utente\Documents\GitHub\timelapse-scripts\Nutrition-Graph-Manim\render.ps1" -TargetCal 3500 -TotalCal 3470 -Protein 171 -Carbs 185 -Fat 71 -Output my_video -Transparent
+.\render.ps1 -TargetCal 3500 -TotalCal 3470 -Protein 171 -Carbs 185 -Fat 71 -Output nutrition_demo -Quality h -Transparent
 ```
 
-> **Note:** If PowerShell blocks the script, run this once:
-> 
-> ```powershell
-> Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
-> ```
-
----
-
-## Manual Command (from project directory)
+Single sleep render (manual values):
 
 ```powershell
-$env:TARGET_CAL=3500; $env:TOTAL_CAL=3470; $env:PROTEIN=171; $env:CARBS=185; $env:FAT=71; manim -pqh macro_tracker.py MacroTracker -o my_video
+.\render-garmin-sleep.ps1 -Date 2026-07-11 -TotalSleepMin 445 -DeepMin 102 -LightMin 246 -RemMin 97 -AwakeMin 18 -Output sleep_demo -Quality h -Transparent
 ```
 
-### Environment Variables
-
-| Variable     | Description                     | Default |
-| ------------ | ------------------------------- | ------- |
-| `TARGET_CAL` | Daily calorie goal              | `3400`  |
-| `TOTAL_CAL`  | Total calories consumed         | `3000`  |
-| `PROTEIN`    | Grams of protein consumed       | `160`   |
-| `CARBS`      | Grams of carbohydrates consumed | `300`   |
-| `FAT`        | Grams of fat consumed           | `71`    |
-
-### Quality Flags
-
-| Flag   | Quality | Resolution        | Speed                     |
-| ------ | ------- | ----------------- | ------------------------- |
-| `-pql` | Low     | 480p              | Fast (use for previewing) |
-| `-pqm` | Medium  | 720p              | Medium                    |
-| `-pqh` | High    | 1080p (1920×1080) | Slow                      |
-
----
-
-## Output Location
-
-By default, Manim saves videos to:
-
-```
-media/videos/macro_tracker/1080p60/
-```
-
-Use the `-o` flag (or `-Output` in render.ps1) to name your output file.
-
----
-
-## Transparent Background Notes
-
-The `--transparent` flag outputs a `.mov` file with an alpha channel.
-
-- ❌ **Does not work** in Windows Photos or Windows Media Player
-- ⚠️ **VLC** will show incorrect colors (known codec issue)
-- ✅ **Works correctly** in:
-  - DaVinci Resolve (free)
-  - Adobe Premiere Pro / After Effects
-  - Vegas Pro
-
-For a more compatible transparent format, use WebM manually:
+Batch render from both CSV files:
 
 ```powershell
-$env:TARGET_CAL=3500; $env:TOTAL_CAL=3470; $env:PROTEIN=171; $env:CARBS=185; $env:FAT=71; manim -pqh --transparent --format webm macro_tracker.py MacroTracker -o my_video
+.\render-inputs-batch.ps1 -Quality h -Transparent
 ```
 
----
-
-## Batch Render From Inputs Folder (fastest workflow)
-
-This project includes batch scripts that read your export files directly from `Inputs/`:
-
-- `Inputs/FoodLog.CSV` for nutrition renders
-- `Inputs/Sleep.csv` for sleep renders
-
-Run both with one command:
+Dry run parsing only:
 
 ```powershell
-& "C:\Users\Utente\Documents\GitHub\timelapse-scripts\Nutrition-Graph-Manim\render-inputs-batch.ps1"
+.\render-inputs-batch.ps1 -DryRun
 ```
 
-This creates:
+## Inputs
 
-- `nutrition_YYYY-MM-DD` videos from `FoodLog.CSV`
-- `sleep_YYYY-MM-DD` videos from `Sleep.csv`
+- `Inputs/FoodLog.CSV`
+- `Inputs/Sleep.csv`
 
-Both are rendered as transparent high quality videos.
-
-### Optional dry run (parsing only, no rendering)
-
-```powershell
-& "C:\Users\Utente\Documents\GitHub\timelapse-scripts\Nutrition-Graph-Manim\render-inputs-batch.ps1" -DryRun
-```
-
-### Run only one category
-
-Nutrition only:
-
-```powershell
-& "C:\Users\Utente\Documents\GitHub\timelapse-scripts\Nutrition-Graph-Manim\render-foodlog-batch.ps1"
-```
-
-Sleep only:
-
-```powershell
-& "C:\Users\Utente\Documents\GitHub\timelapse-scripts\Nutrition-Graph-Manim\render-sleep-csv-batch.ps1"
-```
+Keep these files in place or override paths with script parameters.
 
 

@@ -9,22 +9,22 @@ social-media health tracking clips.
 
 Render commands (PowerShell)
 ----------------------------
-Low quality, opaque (fast preview):
-    manim -pql macro_tracker.py MacroTracker
+Low quality, opaque (fast preview render):
+    manim -ql macro_tracker.py MacroTracker
 
 Low quality with custom values:
     $env:TARGET_CAL=3500; $env:TOTAL_CAL=3470; $env:PROTEIN=171; $env:CARBS=185; $env:FAT=71; \\
-        manim -pql macro_tracker.py MacroTracker -o output_name
+        manim -ql macro_tracker.py MacroTracker -o output_name
 
 High quality, opaque (1920 × 1080):
-    manim -pqh macro_tracker.py MacroTracker
+    manim -qh macro_tracker.py MacroTracker
 
 High quality, transparent background:
-    manim -pqh --transparent macro_tracker.py MacroTracker
+    manim -qh --transparent macro_tracker.py MacroTracker
 
 High quality, transparent with custom values:
     $env:TARGET_CAL=3500; $env:TOTAL_CAL=3470; $env:PROTEIN=171; $env:CARBS=185; $env:FAT=71; \\
-        manim -pqh --transparent macro_tracker.py MacroTracker -o output_name
+        manim -qh --transparent macro_tracker.py MacroTracker -o output_name
 
 Environment variables for nutrition data:
     TARGET_CAL  - calorie goal (default: 3400)
@@ -32,12 +32,12 @@ Environment variables for nutrition data:
     PROTEIN     - grams of protein (default: 160)
     CARBS       - grams of carbs (default: 300)
     FAT         - grams of fat (default: 71)
-    BG_OPACITY  - background opacity 0.0-1.0 (default: 1.0, only works with -pql/-pqh without --transparent)
+    BG_OPACITY  - background opacity 0.0-1.0 (default: 1.0, only works with -ql/-qh without --transparent)
 
 Manim quality flags:
-    -pql  = preview, low quality, quick render
-    -pqm  = preview, medium quality
-    -pqh  = preview, high quality (1920 × 1080)
+    -ql  = low quality, quick render
+    -qm  = medium quality
+    -qh  = high quality (1920 × 1080)
     --transparent = use transparent background instead of solid
 
 Output location:
@@ -71,9 +71,9 @@ from manim import (
 #  EDITABLE INPUTS  ← change these values to customise the animation
 # ─────────────────────────────────────────────────────────────────
 # Command-line usage (PowerShell):
-#   $env:TARGET_CAL=3500; $env:TOTAL_CAL=3470; $env:PROTEIN=171; $env:CARBS=185; $env:FAT=71; manim -pql macro_tracker.py MacroTracker -o output_name
+#   $env:TARGET_CAL=3500; $env:TOTAL_CAL=3470; $env:PROTEIN=171; $env:CARBS=185; $env:FAT=71; manim -ql macro_tracker.py MacroTracker -o output_name
 # Or with transparency and high quality:
-#   $env:TARGET_CAL=3500; $env:TOTAL_CAL=3470; $env:PROTEIN=171; $env:CARBS=185; $env:FAT=71; manim -pqh --transparent macro_tracker.py MacroTracker -o output_name
+#   $env:TARGET_CAL=3500; $env:TOTAL_CAL=3470; $env:PROTEIN=171; $env:CARBS=185; $env:FAT=71; manim -qh --transparent macro_tracker.py MacroTracker -o output_name
 
 TARGET_CALORIES: int = int(os.getenv('TARGET_CAL', '3400'))   # daily calorie goal
 TOTAL_CALORIES:  int = int(os.getenv('TOTAL_CAL', '3000'))    # calories consumed today
@@ -82,7 +82,7 @@ PROTEIN_G: int = int(os.getenv('PROTEIN', '160'))   # grams of protein consumed
 CARBS_G:   int = int(os.getenv('CARBS', '300'))     # grams of carbohydrates consumed
 FAT_G:     int = int(os.getenv('FAT', '71'))        # grams of fat consumed
 
-TITLE_TEXT: str = "Daily Nutrition 2"  # header title — change freely
+TITLE_TEXT: str = "Daily Nutrition"  # header title - change freely
 
 # Whether to allow the coloured ring to exceed 100% of the target
 ALLOW_OVERFLOW: bool  = True

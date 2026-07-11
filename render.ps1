@@ -1,3 +1,4 @@
+[CmdletBinding()]
 param(
     [int]$TargetCal = 3400,
     [int]$TotalCal  = 3000,
@@ -5,27 +6,29 @@ param(
     [int]$Carbs     = 300,
     [int]$Fat       = 71,
     [string]$Output = "macro_output",
-    [string]$Quality = "h",
-    [switch]$Transparent
+    [ValidateSet("l", "m", "h")][string]$Quality = "h",
+    [switch]$Transparent,
+    [string]$EnvFilePath = (Join-Path $PSScriptRoot ".env")
 )
 
-$ScriptDir = "C:\Users\Utente\Documents\GitHub\timelapse-scripts\Nutrition-Graph-Manim"
+Set-StrictMode -Version Latest
+$ErrorActionPreference = "Stop"
 
-$env:TARGET_CAL = $TargetCal
-$env:TOTAL_CAL  = $TotalCal
-$env:PROTEIN    = $Protein
-$env:CARBS      = $Carbs
-$env:FAT        = $Fat
+. (Join-Path $PSScriptRoot "scripts\common.ps1")
+Import-EnvFile -Path $EnvFilePath
 
-$qualityFlag = "-pq$Quality"
-$transparentFlag = if ($Transparent) { "--transparent" } else { "" }
+$scenePath = Join-Path $PSScriptRoot "macro_tracker.py"
 
-Push-Location $ScriptDir
+[Environment]::SetEnvironmentVariable("TARGET_CAL", $TargetCal.ToString(), "Process")
+[Environment]::SetEnvironmentVariable("TOTAL_CAL", $TotalCal.ToString(), "Process")
+[Environment]::SetEnvironmentVariable("PROTEIN", $Protein.ToString(), "Process")
+[Environment]::SetEnvironmentVariable("CARBS", $Carbs.ToString(), "Process")
+[Environment]::SetEnvironmentVariable("FAT", $Fat.ToString(), "Process")
 
-if ($Transparent) {
-    manim $qualityFlag --transparent "$ScriptDir\macro_tracker.py" MacroTracker -o $Output
-} else {
-    manim $qualityFlag "$ScriptDir\macro_tracker.py" MacroTracker -o $Output
-}
-
-Pop-Location
+Invoke-ManimScene `
+    -ProjectRoot $PSScriptRoot `
+    -SceneScript $scenePath `
+    -SceneName "MacroTracker" `
+    -OutputName $Output `
+    -Quality $Quality `
+    -Transparent:$Transparent

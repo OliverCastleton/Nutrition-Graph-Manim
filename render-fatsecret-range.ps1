@@ -10,7 +10,10 @@ param(
 
     [int]$DefaultTargetCal = 3400,
     [string]$OutputPrefix = "macro",
-    [string]$RenderScriptPath = (Join-Path $PSScriptRoot "render.ps1")
+    [string]$RenderScriptPath = (Join-Path $PSScriptRoot "render.ps1"),
+    [ValidateSet("l", "m", "h")][string]$Quality = "h",
+    [switch]$Transparent,
+    [switch]$DryRun
 )
 
 Set-StrictMode -Version Latest
@@ -167,18 +170,20 @@ for ($d = $StartDate.Date; $d -le $EndDate.Date; $d = $d.AddDays(1)) {
     $outputName = "{0}_{1}" -f $OutputPrefix, $dateKey
 
     Write-Host "Rendering $dateKey -> $outputName"
-    & $RenderScriptPath `
-        -TargetCal $targetCal `
-        -TotalCal $totalCal `
-        -Protein $protein `
-        -Carbs $carbs `
-        -Fat $fat `
-        -Output $outputName `
-        -Quality "h" `
-        -Transparent
+    if (-not $DryRun) {
+        & $RenderScriptPath `
+            -TargetCal $targetCal `
+            -TotalCal $totalCal `
+            -Protein $protein `
+            -Carbs $carbs `
+            -Fat $fat `
+            -Output $outputName `
+            -Quality $Quality `
+            -Transparent:$Transparent
 
-    if ($LASTEXITCODE -ne 0) {
-        throw "Render failed for $dateKey with exit code $LASTEXITCODE"
+        if ($LASTEXITCODE -ne 0) {
+            throw "Render failed for $dateKey with exit code $LASTEXITCODE"
+        }
     }
 
     $renderedCount++

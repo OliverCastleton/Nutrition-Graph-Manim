@@ -3,6 +3,8 @@ param(
     [int]$TargetSleepMin = 480,
     [string]$OutputPrefix = "sleep",
     [string]$RenderSleepScriptPath = (Join-Path $PSScriptRoot "render-garmin-sleep.ps1"),
+    [ValidateSet("l", "m", "h")][string]$Quality = "h",
+    [switch]$Transparent,
     [switch]$DryRun
 )
 
@@ -146,8 +148,8 @@ foreach ($row in $rows) {
                 -RemMin $rem `
                 -AwakeMin $awake `
                 -Output $outputName `
-                -Quality "h" `
-                -Transparent
+                -Quality $Quality `
+                -Transparent:$Transparent
 
             if ($LASTEXITCODE -ne 0) {
                 throw "Render failed with exit code $LASTEXITCODE"
